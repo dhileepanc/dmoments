@@ -11,8 +11,8 @@ import Dashboard from './pages/admin/Dashboard.jsx'
 import Photographers from './pages/admin/Photographers.jsx'
 import Events from './pages/admin/Events.jsx'
 import Photos from './pages/admin/Photos.jsx'
-import Subscriptions from './pages/admin/Subscriptions.jsx'
-import CountryPlans from './pages/admin/CountryPlans.jsx'
+import AddSubscription from './pages/admin/AddSubscription.jsx'
+import ManageSubscription from './pages/admin/ManageSubscription.jsx'
 import Transactions from './pages/admin/Transactions.jsx'
 import HelpAdd from './pages/admin/HelpAdd.jsx'
 import HelpManage from './pages/admin/HelpManage.jsx'
@@ -36,8 +36,9 @@ function App() {
         <Route path="photographers" element={<Photographers />} />
         <Route path="events" element={<Events />} />
         <Route path="photos" element={<Photos />} />
-        <Route path="subscriptions" element={<Subscriptions />} />
-        <Route path="country-plans" element={<CountryPlans />} />
+        <Route path="subscriptions" element={<Navigate to="/admin/subscriptions/manage" replace />} />
+        <Route path="subscriptions/add" element={<AddSubscription />} />
+        <Route path="subscriptions/manage" element={<ManageSubscription />} />
         <Route path="transactions" element={<Transactions />} />
         <Route path="helps/add" element={<HelpAdd />} />
         <Route path="helps/manage" element={<HelpManage />} />

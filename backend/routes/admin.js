@@ -222,6 +222,27 @@ router.post('/country-plans', async (req, res) => {
   )
   res.status(201).json(rows[0])
 })
+router.post('/country-plans/bulk', async (req, res) => {
+  const { title, description, duration_days, events_limit, prices } = req.body
+  if (!title) return res.status(400).json({ message: 'Title is required' })
+  const list = (Array.isArray(prices) ? prices : []).filter(
+    (p) => p && p.country && p.currency_code && p.price !== '' && p.price !== null && Number(p.price) >= 0
+  )
+  if (list.length === 0) {
+    return res.status(400).json({ message: 'Enter a price for at least one country' })
+  }
+  const duration = Number(duration_days) > 0 ? Number(duration_days) : 30
+  const limit = Number(events_limit) > 0 ? Number(events_limit) : 0
+  for (const p of list) {
+    await query('DELETE FROM country_plans WHERE country = $1', [p.country])
+    await query(
+      `INSERT INTO country_plans (country, currency_code, price, title, description, duration_days, events_limit)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [p.country, String(p.currency_code).toUpperCase(), Number(p.price) || 0, title, description || null, duration, limit]
+    )
+  }
+  res.status(201).json({ ok: true, count: list.length })
+})
 router.put('/country-plans/:id', async (req, res) => {
   const { country, currency_code, price, title, description, duration_days, events_limit } = req.body
   const { rows } = await query(

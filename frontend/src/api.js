@@ -23,6 +23,11 @@ export async function api(path, { method = 'GET', body, role = 'photographer' } 
   })
 
   const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(data.message || `Request failed (${res.status})`)
+  if (!res.ok) {
+    const error = new Error(data.message || `Request failed (${res.status})`)
+    error.status = res.status
+    error.data = data
+    throw error
+  }
   return data
 }

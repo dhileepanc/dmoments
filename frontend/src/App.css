@@ -550,6 +550,64 @@
   overflow: hidden;
 }
 
+/* ---------- Subscription pricing ---------- */
+.section-title {
+  font-size: 18px;
+  margin: 0 0 4px;
+}
+.price-head {
+  margin-top: 28px;
+}
+.price-head .section-title {
+  margin: 0;
+}
+.search-input {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  min-width: 220px;
+  background: #fff;
+}
+.search-input:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+.country-price-wrap {
+  max-height: 440px;
+  overflow: auto;
+}
+.country-price-wrap thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.price-input {
+  width: 140px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-weight: 400;
+  background: #fff;
+}
+.price-input:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.sticky-actions {
+  position: sticky;
+  bottom: 0;
+  background: var(--bg);
+  padding: 14px 0;
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
 /* ---------- Forms / Modal ---------- */
 .form-grid {
   display: grid;

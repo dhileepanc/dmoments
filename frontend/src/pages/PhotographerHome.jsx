@@ -52,6 +52,21 @@ export default function PhotographerHome() {
 
   if (!user) return <Navigate to="/login" replace />
 
+  const payAndCreate = async (body) => {
+    const order = await api('/photographer/pay/event-order', { method: 'POST' })
+    const payment = await startPayment({
+      key_id: order.key_id,
+      order_id: order.order_id,
+      amount: order.amount,
+      currency: order.currency,
+      name: 'AI Photo Platform',
+      description: 'Event creation fee',
+      email: user.email,
+      contact: user.phone,
+    })
+    return api('/photographer/events', { method: 'POST', body: { ...body, ...payment } })
+  }
+
   const save = async (e) => {
     e.preventDefault()
     setError('')
@@ -63,30 +78,20 @@ export default function PhotographerHome() {
         return
       }
 
-      if (sub?.pricing === 'fee') {
-        const order = await api('/photographer/pay/event-order', { method: 'POST' })
-        const payment = await startPayment({
-          key_id: order.key_id,
-          order_id: order.order_id,
-          amount: order.amount,
-          currency: order.currency,
-          name: 'AI Photo Platform',
-          description: 'Event creation fee',
-          email: user.email,
-          contact: user.phone,
-        })
-        const result = await api('/photographer/events', {
-          method: 'POST',
-          body: { ...editing, ...payment },
-        })
-        setEditing(null)
-        navigate(`/home/events/${result.event.id}`)
+      let result
+      if (!sub || sub.remaining <= 0) {
+        result = await payAndCreate(editing)
       } else {
-        const result = await api('/photographer/events', { method: 'POST', body: editing })
-        setEditing(null)
-        if (result.subscription) setSub(result.subscription)
-        navigate(`/home/events/${result.event.id}`)
+        try {
+          result = await api('/photographer/events', { method: 'POST', body: editing })
+        } catch (err) {
+          if (err.data?.requiresPayment) result = await payAndCreate(editing)
+          else throw err
+        }
       }
+      setEditing(null)
+      if (result.subscription) setSub(result.subscription)
+      navigate(`/home/events/${result.event.id}`)
     } catch (err) {
       setError(err.message)
     }
@@ -94,15 +99,6 @@ export default function PhotographerHome() {
 
   const onAddClick = () => {
     setError('')
-    if (!sub) return
-    if (sub.pricing === 'fee') {
-      setEditing({ ...EMPTY })
-      return
-    }
-    if (sub.remaining <= 0) {
-      setError(`Free event limit reached (${sub.used}/${sub.max}).`)
-      return
-    }
     setEditing({ ...EMPTY })
   }
 
@@ -177,16 +173,28 @@ export default function PhotographerHome() {
                   <strong>Subscription:</strong> {sub.plan}
                 </span>
                 <span className="muted">
-                  {sub.expiresAt ? `Valid until ${sub.expiresAt}` : 'Active'}
+                  {sub.remaining > 0
+                    ? `${sub.remaining} of ${sub.max} events remaining`
+                    : 'Included events used — per-event fee applies'}
+                  {sub.expiresAt ? ` · valid until ${sub.expiresAt}` : ''}
                 </span>
               </>
             ) : (
               <>
                 <span>
-                  <strong>No active plan</strong>
-                  {sub.pricing === 'fee'
-                    ? ' — you can add events by paying per event, or subscribe for a plan.'
-                    : ' — subscribe to get started.'}
+                  {sub.remaining > 0 ? (
+                    <>
+                      <strong>
+                        {sub.remaining} free event{sub.remaining === 1 ? '' : 's'} left
+                      </strong>
+                      {' — subscribe for more.'}
+                    </>
+                  ) : (
+                    <>
+                      <strong>Free events used</strong>
+                      {' — a per-event fee applies from now on, or subscribe for a plan.'}
+                    </>
+                  )}
                 </span>
                 <button type="button" className="btn btn-sm btn-primary" onClick={openPlans}>
                   Subscribe Now

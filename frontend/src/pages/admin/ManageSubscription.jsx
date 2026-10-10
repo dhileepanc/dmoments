@@ -13,7 +13,7 @@ const EMPTY = {
   events_limit: '20',
 }
 
-export default function CountryPlans() {
+export default function ManageSubscription() {
   const [rows, setRows] = useState([])
   const [editing, setEditing] = useState(null)
   const [error, setError] = useState('')
@@ -58,8 +58,7 @@ export default function CountryPlans() {
     load()
   }
 
-  const setField = (name, value) =>
-    setEditing((prev) => ({ ...prev, [name]: value }))
+  const setField = (name, value) => setEditing((prev) => ({ ...prev, [name]: value }))
 
   const onCountryChange = (value) => {
     const code = currencyFor(value)
@@ -69,9 +68,9 @@ export default function CountryPlans() {
   return (
     <div>
       <div className="page-head">
-        <h1 className="page-title">Country Plans</h1>
+        <h1 className="page-title">Manage Subscription</h1>
         <button type="button" className="btn btn-primary" onClick={() => setEditing({ ...EMPTY })}>
-          + Add Country
+          + Add Country Plan
         </button>
       </div>
 
@@ -80,7 +79,7 @@ export default function CountryPlans() {
       {loading ? (
         <p className="muted">Loading...</p>
       ) : rows.length === 0 ? (
-        <p className="muted">No country plans yet.</p>
+        <p className="muted">No subscription plans yet.</p>
       ) : (
         <div className="table-wrap">
           <table className="data-table">
@@ -88,6 +87,7 @@ export default function CountryPlans() {
               <tr>
                 <th>Country</th>
                 <th>Title</th>
+                <th>Description</th>
                 <th>Currency Code</th>
                 <th>Price</th>
                 <th>Duration</th>
@@ -100,6 +100,7 @@ export default function CountryPlans() {
                 <tr key={row.id}>
                   <td>{row.country}</td>
                   <td>{row.title || '—'}</td>
+                  <td className="muted">{row.description || '—'}</td>
                   <td>{row.currency_code}</td>
                   <td>{Number(row.price).toFixed(2)}</td>
                   <td>{row.duration_days ? `${row.duration_days} days` : '—'}</td>
@@ -120,7 +121,7 @@ export default function CountryPlans() {
       )}
 
       {editing && (
-        <Modal title={editing.id ? 'Edit Country Plan' : 'Add Country Plan'} onClose={() => setEditing(null)}>
+        <Modal title={editing.id ? 'Edit Subscription Plan' : 'Add Subscription Plan'} onClose={() => setEditing(null)}>
           <form className="form-grid" onSubmit={save}>
             <label className="field">
               Country

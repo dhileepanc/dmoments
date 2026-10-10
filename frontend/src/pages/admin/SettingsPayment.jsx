@@ -25,7 +25,12 @@ export default function SettingsPayment() {
     e.preventDefault()
     setStatus('')
     try {
-      await api('/admin/settings', { method: 'PUT', body: form, role: 'admin' })
+      const body = {
+        razorpay_key_id: form.razorpay_key_id.trim(),
+        razorpay_key_secret: form.razorpay_key_secret.trim(),
+        razorpay_currency: form.razorpay_currency.trim(),
+      }
+      await api('/admin/settings', { method: 'PUT', body, role: 'admin' })
       setStatus('Payment settings saved.')
     } catch (err) {
       setStatus(err.message)
@@ -40,17 +45,27 @@ export default function SettingsPayment() {
         <label className="field">
           Razorpay Key ID
           <input
+            placeholder="rzp_test_xxxxxxxxxxxx"
             value={form.razorpay_key_id}
             onChange={(e) => setForm({ ...form, razorpay_key_id: e.target.value })}
           />
+          <small className="hint">
+            From Razorpay Dashboard &gt; Settings &gt; API Keys. Use test keys while testing and live
+            keys for real payments.
+          </small>
         </label>
         <label className="field">
           Razorpay Key Secret
           <input
             type="password"
+            placeholder="Your key secret"
             value={form.razorpay_key_secret}
             onChange={(e) => setForm({ ...form, razorpay_key_secret: e.target.value })}
           />
+          <small className="hint">
+            Must belong to the same mode (test/live) as the Key ID above, otherwise Razorpay returns
+            "Authentication failed".
+          </small>
         </label>
         <label className="field">
           Currency

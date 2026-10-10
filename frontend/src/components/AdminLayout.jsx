@@ -50,11 +50,11 @@ export default function AdminLayout() {
           </button>
           {openSubs && (
             <div className="admin-submenu">
-              <NavLink to="/admin/subscriptions" className="admin-link sub">
-                Subscriptions
+              <NavLink to="/admin/subscriptions/add" className="admin-link sub">
+                Add Subscription
               </NavLink>
-              <NavLink to="/admin/country-plans" className="admin-link sub">
-                Country Plans
+              <NavLink to="/admin/subscriptions/manage" className="admin-link sub">
+                Manage Subscription
               </NavLink>
               <NavLink to="/admin/transactions" className="admin-link sub">
                 Transactions

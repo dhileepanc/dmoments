@@ -70,14 +70,15 @@ export default function SettingsGeneral() {
             value={form.event_pricing || 'free'}
             onChange={(e) => setForm({ ...form, event_pricing: e.target.value })}
           >
-            <option value="free">Free (users get an event limit)</option>
-            <option value="fee">Fee per event</option>
+            <option value="free">Free (included events, then per-event fee)</option>
+            <option value="fee">Fee per event (no free events)</option>
           </select>
           <small className="hint">
-            How photographers pay when creating an event.
+            How photographers pay when creating an event. Once a photographer uses up their included
+            events, each new event requires the per-event fee.
           </small>
         </label>
-        {form.event_pricing === 'free' ? (
+        {form.event_pricing === 'free' && (
           <label className="field">
             Free User Event Limit
             <input
@@ -87,25 +88,26 @@ export default function SettingsGeneral() {
               onChange={(e) => setForm({ ...form, free_event_limit: e.target.value })}
             />
             <small className="hint">
-              Events a photographer without an active plan can create for free. Subscribed users
-              instead get their plan's event limit. Deleted events free up the count.
-            </small>
-          </label>
-        ) : (
-          <label className="field">
-            Per Event Fee
-            <input
-              type="number"
-              step="0.01"
-              min="1"
-              value={form.event_fee}
-              onChange={(e) => setForm({ ...form, event_fee: e.target.value })}
-            />
-            <small className="hint">
-              Amount charged (in the Razorpay currency) before each event is created.
+              Events a photographer without an active plan can create for free before the per-event
+              fee applies. Subscribed users instead get their plan's event limit. Deleted events
+              free up the count.
             </small>
           </label>
         )}
+        <label className="field">
+          Per Event Fee
+          <input
+            type="number"
+            step="0.01"
+            min="1"
+            value={form.event_fee}
+            onChange={(e) => setForm({ ...form, event_fee: e.target.value })}
+          />
+          <small className="hint">
+            Amount charged (in the Razorpay currency) for each event once a photographer's included
+            events are used up. Also the fee when pricing is set to fee per event.
+          </small>
+        </label>
         <div className="form-actions">
           <button className="btn btn-primary">Save Settings</button>
         </div>

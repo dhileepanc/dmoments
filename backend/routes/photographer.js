@@ -29,7 +29,10 @@ async function subscriptionInfo(photographerId) {
   const freeLimit = Number.parseInt(freeRes.rows[0]?.value, 10) || 10
   const s = Object.fromEntries(settingsRes.rows.map((r) => [r.key, r.value]))
   const pricing = s.event_pricing || 'free'
-  const max = sub && Number(sub.events_limit) > 0 ? Number(sub.events_limit) : freeLimit
+  let max
+  if (sub && Number(sub.events_limit) > 0) max = Number(sub.events_limit)
+  else if (pricing === 'fee') max = 0
+  else max = freeLimit
   return {
     hasSubscription: Boolean(sub),
     plan: sub?.plan || null,
@@ -47,12 +50,12 @@ async function subscriptionInfo(photographerId) {
 
 async function getRazorpayConfig() {
   const settings = await getSettings()
-  const keyId = settings.razorpay_key_id
-  const keySecret = settings.razorpay_key_secret
+  const keyId = (settings.razorpay_key_id || '').trim()
+  const keySecret = (settings.razorpay_key_secret || '').trim()
   if (!keyId || !keySecret) {
     throw new PaymentNotConfiguredError()
   }
-  return { keyId, keySecret, currency: settings.razorpay_currency || 'INR' }
+  return { keyId, keySecret, currency: (settings.razorpay_currency || 'INR').trim() }
 }
 
 class PaymentNotConfiguredError extends Error {
@@ -76,7 +79,19 @@ async function createRazorpayOrder({ amount, currency, receipt }) {
   })
   if (!res.ok) {
     const text = await res.text()
-    throw new Error(`Razorpay order failed: ${text}`)
+    let detail = text
+    try {
+      const parsed = JSON.parse(text)
+      detail = parsed?.error?.description || parsed?.error?.reason || text
+    } catch {
+      // keep raw text
+    }
+    if (/authentication failed/i.test(detail)) {
+      throw new Error(
+        'Razorpay authentication failed. Please check the Key ID and Key Secret in Admin > Settings > Payment.'
+      )
+    }
+    throw new Error(`Razorpay order failed: ${detail}`)
   }
   return res.json()
 }
@@ -231,16 +246,22 @@ router.post('/events', async (req, res) => {
   const { name, event_date, location, image, description } = req.body
   if (!name) return res.status(400).json({ message: 'Event name is required' })
 
-  const settings = await getSettings()
-  const pricing = settings.event_pricing || 'free'
+  const subscription = await subscriptionInfo(req.user.id)
 
-  if (pricing === 'fee') {
+  if (subscription.used >= subscription.max) {
     const payment_id = req.body.payment_id
     const order_id = req.body.order_id
     const signature = req.body.signature
     if (!payment_id || !order_id || !signature) {
-      return res.status(400).json({ message: 'Event payment is required before adding.' })
+      return res.status(402).json({
+        message: subscription.hasSubscription
+          ? 'Subscription event limit reached. Payment is required to add another event.'
+          : 'Free event limit reached. Payment is required to add another event.',
+        requiresPayment: true,
+        subscription,
+      })
     }
+    const settings = await getSettings()
     const keySecret = settings.razorpay_key_secret
     if (!keySecret) return res.status(400).json({ message: 'Razorpay is not configured.' })
     if (!verifySignature({ orderId: order_id, paymentId: payment_id, signature, secret: keySecret })) {
@@ -265,14 +286,14 @@ router.post('/events', async (req, res) => {
        WHERE razorpay_order_id=$1`,
       [order_id, payment_id, rows[0].id]
     )
-    return res.status(201).json({ event: rows[0], transaction: tx })
-  }
-
-  const subscription = await subscriptionInfo(req.user.id)
-  if (subscription.used >= subscription.max) {
-    return res.status(403).json({
-      message: `Free event limit reached (${subscription.used}/${subscription.max}).`,
-      subscription,
+    return res.status(201).json({
+      event: rows[0],
+      transaction: tx,
+      subscription: {
+        ...subscription,
+        used: subscription.used + 1,
+        remaining: Math.max(0, subscription.max - subscription.used - 1),
+      },
     })
   }
 
@@ -281,7 +302,14 @@ router.post('/events', async (req, res) => {
      VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
     [name, event_date || null, location, image, description, req.user.id]
   )
-  res.status(201).json({ event: rows[0], subscription: { ...subscription, used: subscription.used + 1 } })
+  res.status(201).json({
+    event: rows[0],
+    subscription: {
+      ...subscription,
+      used: subscription.used + 1,
+      remaining: Math.max(0, subscription.max - subscription.used - 1),
+    },
+  })
 })
 
 router.get('/transactions', async (req, res) => {
